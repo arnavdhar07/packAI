@@ -1,0 +1,68 @@
+{
+  "event_id": "[test case]",
+  "event_data": {
+    "event_id": "[test case]",
+    "timestamp": "2024-11-13T16:30:00Z",
+    "event_type": "maintenance_request",
+    "source": "tenant_email_plumbing_issue.txt",
+    "entity_id": "Unit 204 - 123 Main Street",
+    "repair_type": "plumbing",
+    "description": "Tenant reports water leak under kitchen sink. Water is pooling on the floor and dripping from the cabinet. Issue started this morning. Urgent repair needed.",
+    "urgency": "urgent"
+  },
+  "created_at": "2024-11-13T16:30:00Z",
+  "status": "open",
+  "actions": [
+    {
+      "timestamp": "2024-11-13T16:30:15Z",
+      "action_type": "determined_repair_type",
+      "data": {
+        "repair_type": "plumbing",
+        "confidence": "high",
+        "method": "gpt_analysis"
+      }
+    },
+    {
+      "timestamp": "2024-11-13T16:30:28Z",
+      "action_type": "selected_maintenance_company",
+      "data": {
+        "company": {
+          "name": "ABC Plumbing Services",
+          "company_name": "ABC Plumbing Services",
+          "specialties": "plumbing, emergency repairs, leak detection",
+          "email": "contact@abcplumbing.com",
+          "phone": "(555) 123-4567",
+          "rating": "4.8",
+          "response_time": "2-4 hours"
+        },
+        "selection_reason": "Best match for plumbing repair type, available for urgent requests"
+      }
+    }
+  ],
+  "emails": [
+    {
+      "timestamp": "2024-11-13T16:30:45Z",
+      "recipient": "property_manager",
+      "from_email": "management@riverproperties.com",
+      "to_email": "property.manager@riverproperties.com",
+      "content": "Subject: Maintenance Request Summary - Unit 204\n\nDear Property Manager,\n\nA new maintenance request has been received and processed:\n\nProperty/Unit: Unit 204 - 123 Main Street\nEvent Type: maintenance_request\nRepair Type: plumbing\nUrgency: urgent\n\nDescription:\nTenant reports water leak under kitchen sink. Water is pooling on the floor and dripping from the cabinet. Issue started this morning. Urgent repair needed.\n\nActions Taken:\n- Repair type determined: plumbing\n- Maintenance company selected: ABC Plumbing Services\n- Emails generated and ready for review\n\nPlease review the case file for complete details.\n\nBest regards,\nProperty Management Agent",
+      "sent": true
+    },
+    {
+      "timestamp": "2024-11-13T16:31:02Z",
+      "recipient": "maintenance_company",
+      "from_email": "management@riverproperties.com",
+      "to_email": "contact@abcplumbing.com",
+      "content": "Subject: Maintenance Request - Unit 204 - Urgent Plumbing Issue\n\nDear ABC Plumbing Services,\n\nWe have an urgent maintenance request that requires your attention:\n\nProperty/Unit: Unit 204 - 123 Main Street\nRepair Type: plumbing\nUrgency: urgent\n\nIssue Description:\nTenant reports water leak under kitchen sink. Water is pooling on the floor and dripping from the cabinet. Issue started this morning. Urgent repair needed.\n\nWe would appreciate if you could provide your available times to come inspect this issue and provide a consultation. Please respond with your availability so we can coordinate with the tenant.\n\nThank you for your prompt attention to this matter.\n\nBest regards,\nProperty Management Team",
+      "sent": true
+    },
+    {
+      "timestamp": "2024-11-13T16:31:18Z",
+      "recipient": "tenant",
+      "from_email": "management@riverproperties.com",
+      "to_email": "tenant.unit204@example.com",
+      "content": "Subject: Maintenance Request Received - Unit 204\n\nDear Tenant,\n\nThank you for reporting the maintenance issue at Unit 204 - 123 Main Street.\n\nWe have received your request regarding the plumbing issue (water leak under kitchen sink) and have taken immediate action. A maintenance company (ABC Plumbing Services) will be contacting you shortly to schedule a time to visit and assess the issue.\n\nPlease be available to coordinate with the maintenance company for the inspection. They will work with you to find a convenient time for the visit.\n\nIf you have any questions or concerns, please don't hesitate to contact us.\n\nThank you for your patience.\n\nBest regards,\nProperty Management Team",
+      "sent": true
+    }
+  ]
+}
