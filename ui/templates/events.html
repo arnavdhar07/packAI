@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Events - Pack Intelligence{% endblock %}
+
+{% block extra_head %}
+<style>
+  .events-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .event-item {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .event-item:hover {
+    background: #f0f0f0;
+  }
+  .event-item-info {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .event-label {
+    padding: 4px 10px;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: bold;
+    min-width: 60px;
+    text-align: center;
+  }
+  .event-id {
+    font-weight: bold;
+    color: #4285f4;
+    min-width: 150px;
+  }
+  .event-type {
+    color: #666;
+    min-width: 150px;
+  }
+  .event-entity {
+    color: #333;
+    min-width: 150px;
+  }
+  .event-source {
+    color: #999;
+    font-size: 0.9em;
+    min-width: 150px;
+  }
+  .event-meta {
+    color: #999;
+    font-size: 0.9em;
+    margin-left: auto;
+    text-align: right;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Events</h1>
+<div class="events-container">
+  {% if events %}
+    {% for event in events %}
+    <div class="event-item" onclick="window.location.href='/events/{{ event.event_id }}'">
+      <div class="event-item-info">
+        <span class="event-label">Recent</span>
+        <div class="event-id">{{ event.event_id }}</div>
+        <div class="event-type">{{ event.event_type if event.event_type else 'Pending Analysis' }}</div>
+        <div class="event-source">{{ event.source }}</div>
+      </div>
+      <div class="event-meta">
+        <div>{{ event.timestamp[:10] }}</div>
+        <div style="font-size: 0.8em">{{ event.timestamp[11:19] }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <p>No events found.</p>
+      <p style="margin-top: 10px; font-size: 0.9em">
+        Events will appear here once they are created from incoming data.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

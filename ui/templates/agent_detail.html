@@ -1,0 +1,144 @@
+{% extends "base.html" %} {% block title %}{{ agent.name }} - Pack
+Intelligence{% endblock %} {% block extra_head %}
+<style>
+  .agent-header {
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+  }
+  .agent-header h1 {
+    margin-bottom: 10px;
+  }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #4285f4;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .back-link:hover {
+    text-decoration: underline;
+  }
+  .cases-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .case-item {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .case-item:hover {
+    background: #f0f0f0;
+  }
+  .case-item-info {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .case-status-badge {
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.7em;
+    font-weight: bold;
+    text-transform: uppercase;
+    min-width: 60px;
+    text-align: center;
+  }
+  .case-status-open {
+    background: #fff3cd;
+    color: #856404;
+  }
+  .case-status-closed {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  .case-status-resolved {
+    background: #d4edda;
+    color: #155724;
+  }
+  .case-id {
+    font-weight: bold;
+    color: #4285f4;
+    min-width: 150px;
+  }
+  .case-type {
+    color: #666;
+    min-width: 150px;
+  }
+  .case-entity {
+    color: #333;
+    min-width: 150px;
+  }
+  .case-meta {
+    color: #999;
+    font-size: 0.9em;
+    margin-left: auto;
+    text-align: right;
+  }
+  .case-stats {
+    display: flex;
+    gap: 15px;
+    margin-left: 20px;
+    color: #666;
+    font-size: 0.9em;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+  }
+</style>
+{% endblock %} {% block content %}
+<a href="/agents" class="back-link">← Back to Agents</a>
+
+<div class="agent-header">
+  <h1>{{ agent.name }}</h1>
+  <div style="color: #666; font-size: 0.9em">
+    <span><strong>Agent ID:</strong> {{ agent.id }}</span>
+  </div>
+</div>
+
+<h2>Cases ({{ cases|length }})</h2>
+<div class="cases-container">
+  {% if cases %} {% for case in cases %}
+  <div
+    class="case-item"
+    onclick="window.location.href='/cases/{{ case.event_id }}'"
+  >
+    <div class="case-item-info">
+      <span
+        class="case-status-badge case-status-{{ case.get('status', 'open') }}"
+      >
+        {{ case.get('status', 'open') }}
+      </span>
+      <div class="case-id">{{ case.event_id }}</div>
+      <div class="case-type">{{ case.summary.event_type }}</div>
+      <div class="case-entity">{{ case.summary.entity_id }}</div>
+      <div class="case-stats">
+        <span>{{ case.summary.actions_count }} actions</span>
+        <span>{{ case.summary.emails_count }} emails</span>
+      </div>
+    </div>
+    <div class="case-meta">
+      <div>{{ case.summary.created_at[:10] }}</div>
+      <div style="font-size: 0.8em">{{ case.summary.created_at[11:19] }}</div>
+    </div>
+  </div>
+  {% endfor %} {% else %}
+  <div class="empty-state">
+    <p>No cases found for this agent.</p>
+    <p style="margin-top: 10px; font-size: 0.9em">
+      Cases will appear here once the agent processes events.
+    </p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

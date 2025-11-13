@@ -1,0 +1,72 @@
+{% extends "base.html" %} {% block title %}Integrations - Property Management
+MVP{% endblock %} {% block extra_head %}
+<style>
+  .integrations-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  .integration-item {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+  }
+  .integration-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  .integration-name {
+    font-size: 1.2em;
+    font-weight: bold;
+  }
+  .integration-status {
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: bold;
+  }
+  .status-connected {
+    background: #4caf50;
+    color: white;
+  }
+  .status-not-configured {
+    background: #ff9800;
+    color: white;
+  }
+  .integration-details {
+    color: #666;
+    font-size: 0.9em;
+  }
+  .integration-details div {
+    margin-top: 5px;
+  }
+</style>
+{% endblock %} {% block content %}
+<h1>Integrations</h1>
+<div class="integrations-container">
+  {% for key, integration in integrations.items() %}
+  <div class="integration-item">
+    <div class="integration-header">
+      <div class="integration-name">{{ integration.name }}</div>
+      <div
+        class="integration-status {% if integration.configured %}status-connected{% else %}status-not-configured{% endif %}"
+      >
+        {{ integration.status }}
+      </div>
+    </div>
+    <div class="integration-details">
+      <div><strong>Folder ID:</strong> {{ integration.folder_id }}</div>
+      {% if not integration.configured %}
+      <div style="margin-top: 10px; color: #ff9800">
+        Configure this integration by setting GOOGLE_DRIVE_FOLDER_ID in your
+        .env file.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

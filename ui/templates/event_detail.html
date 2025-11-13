@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Event {{ event.event_id }} - Pack Intelligence{% endblock %}
+
+{% block extra_head %}
+<style>
+  .event-header {
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+  }
+  .event-header h1 {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .event-label {
+    padding: 4px 10px;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: bold;
+  }
+  .event-header-info {
+    display: flex;
+    gap: 30px;
+    color: #666;
+    font-size: 0.9em;
+  }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #4285f4;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .back-link:hover {
+    text-decoration: underline;
+  }
+  .event-details {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+  }
+  .event-details h3 {
+    margin-bottom: 15px;
+    color: #333;
+  }
+  .detail-row {
+    display: flex;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+  .detail-label {
+    font-weight: bold;
+    color: #666;
+    min-width: 150px;
+  }
+  .detail-value {
+    color: #333;
+    flex: 1;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="/events" class="back-link">← Back to Events</a>
+
+<div class="event-header">
+  <h1>
+    <span class="event-label">Recent</span>
+    {{ event.event_id }}
+  </h1>
+  <div class="event-header-info">
+    <span><strong>Event Type:</strong> {{ event.event_type if event.event_type else 'Pending Analysis' }}</span>
+    <span><strong>Timestamp:</strong> {{ event.timestamp }}</span>
+  </div>
+</div>
+
+<div class="event-details">
+  <h3>Event Information</h3>
+  
+  <div class="detail-row">
+    <div class="detail-label">Event ID:</div>
+    <div class="detail-value">{{ event.event_id }}</div>
+  </div>
+  
+  <div class="detail-row">
+    <div class="detail-label">Event Type:</div>
+    <div class="detail-value">{{ event.event_type if event.event_type else 'Pending Analysis' }}</div>
+  </div>
+  
+  <div class="detail-row">
+    <div class="detail-label">Source:</div>
+    <div class="detail-value">{{ event.source }}</div>
+  </div>
+  
+  <div class="detail-row">
+    <div class="detail-label">Timestamp:</div>
+    <div class="detail-value">{{ event.timestamp }}</div>
+  </div>
+  
+  {% if event.details %}
+  <div class="detail-row">
+    <div class="detail-label">Details:</div>
+    <div class="detail-value">{{ event.details }}</div>
+  </div>
+  {% endif %}
+  
+  {% if event.subscribed_agents %}
+  <div class="detail-row">
+    <div class="detail-label">Subscribed Agents:</div>
+    <div class="detail-value">{{ event.subscribed_agents }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+

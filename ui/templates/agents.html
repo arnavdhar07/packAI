@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Agents - Pack Intelligence{% endblock %}
+
+{% block extra_head %}
+<style>
+    .agents-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .agent-item {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .agent-item:hover {
+        background: #f0f0f0;
+    }
+    .agent-item-info {
+        flex: 1;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+    .agent-name {
+        font-weight: bold;
+        color: #4285f4;
+        min-width: 250px;
+        font-size: 1.1em;
+    }
+    .agent-id {
+        color: #666;
+        font-size: 0.9em;
+        min-width: 200px;
+    }
+    .agent-stats {
+        display: flex;
+        gap: 15px;
+        margin-left: 20px;
+        color: #666;
+        font-size: 0.9em;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Agents</h1>
+<div class="agents-container">
+    {% if agents %}
+        {% for agent in agents %}
+        <div class="agent-item" onclick="window.location.href='/agents/{{ agent.id }}'">
+            <div class="agent-item-info">
+                <div class="agent-name">{{ agent.name }}</div>
+                <div class="agent-id">{{ agent.id }}</div>
+                <div class="agent-stats">
+                    <span>{{ agent.cases_count }} cases</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <p>No agents found.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

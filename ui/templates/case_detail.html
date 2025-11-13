@@ -1,0 +1,297 @@
+{% extends "base.html" %} {% block title %}Case {{ case.event_id }} - Pack
+Intelligence{% endblock %} {% block extra_head %}
+<style>
+  .case-header {
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+  }
+  .case-header h1 {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .status-badge {
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  .status-open {
+    background: #fff3cd;
+    color: #856404;
+  }
+  .status-closed {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  .status-resolved {
+    background: #d4edda;
+    color: #155724;
+  }
+  .case-header-info {
+    display: flex;
+    gap: 30px;
+    color: #666;
+    font-size: 0.9em;
+  }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #4285f4;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .back-link:hover {
+    text-decoration: underline;
+  }
+  .source-event-section {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 30px;
+  }
+  .source-event-section h3 {
+    margin-bottom: 10px;
+    color: #333;
+  }
+  .source-event-content {
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+  .actions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .action-item {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+  }
+  .action-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .action-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .action-tag {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  .tag-action {
+    background: #e3f2fd;
+    color: #1976d2;
+  }
+  .tag-email {
+    background: #f3e5f5;
+    color: #7b1fa2;
+  }
+  .tag-sent {
+    background: #4caf50;
+    color: white;
+  }
+  .approve-button {
+    padding: 5px 12px;
+    background: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    font-weight: bold;
+  }
+  .approve-button:hover {
+    background: #357ae8;
+  }
+  .action-type {
+    font-weight: bold;
+    color: #4285f4;
+  }
+  .action-time {
+    color: #999;
+    font-size: 0.9em;
+  }
+  .action-data {
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .email-item {
+    background: #f0f7ff;
+    border-left: 3px solid #4285f4;
+  }
+  .email-header {
+    margin-bottom: 10px;
+  }
+  .email-addresses {
+    font-size: 0.85em;
+    color: #666;
+    margin-bottom: 5px;
+  }
+  .email-recipient {
+    color: #4285f4;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  .email-content {
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+</style>
+{% endblock %} {% block content %} {% if agent %}
+<a href="/agents/{{ agent.id }}" class="back-link"
+  >← Back to {{ agent.name }}</a
+>
+{% else %}
+<a href="/agents" class="back-link">← Back to Agents</a>
+{% endif %}
+
+<div class="case-header">
+  <h1>
+    {{ case.event_id }}
+    <span class="status-badge status-{{ case.get('status', 'open') }}">
+      {{ case.get('status', 'open') }}
+    </span>
+  </h1>
+  <div class="case-header-info">
+    <span><strong>Event Type:</strong> {{ case.event_data.event_type }}</span>
+    <span><strong>Entity:</strong> {{ case.event_data.entity_id }}</span>
+    <span><strong>Source:</strong> {{ case.event_data.source }}</span>
+    <span><strong>Created:</strong> {{ case.created_at }}</span>
+  </div>
+</div>
+
+<div class="source-event-section">
+  <h3>Source Event</h3>
+  <div class="source-event-content">
+    <div><strong>Source:</strong> {{ case.event_data.source }}</div>
+    <div style="margin-top: 8px">
+      <strong>Description:</strong> {{ case.event_data.description }}
+    </div>
+    <div style="margin-top: 8px">
+      <strong>Type:</strong> {{ case.event_data.event_type }} |
+      <strong>Repair Type:</strong> {{ case.event_data.repair_type }} |
+      <strong>Urgency:</strong> {{ case.event_data.urgency }}
+    </div>
+  </div>
+</div>
+
+<h2>Actions ({{ (case.actions|length + case.emails|length) }})</h2>
+<div class="actions-container">
+  {% for action in case.actions %}
+  <div class="action-item">
+    <div class="action-header">
+      <div class="action-header-left">
+        <span class="action-tag tag-action">Action</span>
+        <div class="action-type">{{ action.action_type }}</div>
+      </div>
+      <div class="action-time">{{ action.timestamp }}</div>
+    </div>
+    <div class="action-data">{{ action.data | tojson(indent=2) }}</div>
+  </div>
+  {% endfor %} {% for email in case.emails %}
+  <div class="action-item email-item" data-email-id="{{ loop.index0 }}">
+    <div class="action-header">
+      <div class="action-header-left">
+        <span class="action-tag tag-email">Email</span>
+        <div class="action-type">Email Generated</div>
+        {% if email.get('sent', false) %}
+        <span class="action-tag tag-sent">Sent</span>
+        {% else %}
+        <button
+          class="approve-button"
+          onclick="approveEmail('{{ loop.index0 }}')"
+        >
+          Approve
+        </button>
+        {% endif %}
+      </div>
+      <div class="action-time">{{ email.timestamp }}</div>
+    </div>
+    <div class="email-header">
+      <div class="email-addresses">
+        <strong>From:</strong> {{ email.get('from_email',
+        'management@riverproperties.com') }}<br />
+        <strong>To:</strong> {{ email.get('to_email', 'Unknown') }}
+      </div>
+      <div class="email-recipient">To: {{ email.recipient }}</div>
+    </div>
+    <div class="email-content">{{ email.content }}</div>
+  </div>
+  {% endfor %} {% if not case.actions and not case.emails %}
+  <div style="text-align: center; padding: 40px; color: #999">
+    No actions recorded yet.
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  function approveEmail(emailIndex) {
+    const eventId = "{{ case.event_id }}";
+    const emailItem = document.querySelector(
+      '[data-email-id="' + emailIndex + '"]'
+    );
+    const headerLeft = emailItem.querySelector(".action-header-left");
+    const approveButton = emailItem.querySelector(".approve-button");
+
+    // Make API call to approve email
+    fetch("/api/cases/" + eventId + "/approve-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email_index: parseInt(emailIndex) }),
+    })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        if (data.success) {
+          // Update UI
+          if (approveButton) {
+            approveButton.remove();
+            const sentTag = document.createElement("span");
+            sentTag.className = "action-tag tag-sent";
+            sentTag.textContent = "Sent";
+            headerLeft.appendChild(sentTag);
+          }
+        }
+      })
+      .catch(function (error) {
+        console.error("Error approving email:", error);
+        // Fallback: just update UI anyway
+        if (approveButton) {
+          approveButton.remove();
+          const sentTag = document.createElement("span");
+          sentTag.className = "action-tag tag-sent";
+          sentTag.textContent = "Sent";
+          headerLeft.appendChild(sentTag);
+        }
+      });
+  }
+</script>
+{% endblock %}
