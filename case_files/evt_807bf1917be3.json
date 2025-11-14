@@ -1,0 +1,70 @@
+{
+  "event_id": "evt_807bf1917be3",
+  "event_data": {
+    "event_id": "evt_807bf1917be3",
+    "event_type": "maintenance_request",
+    "urgency": "routine",
+    "location": "connorquintenz@gmail.com",
+    "summary": "Fridge not getting cold, needs assistance.",
+    "source_type": "gmail",
+    "source_id": "19a802798634705c",
+    "description": "Fridge not getting cold, needs assistance.",
+    "repair_type": "appliance"
+  },
+  "created_at": "2025-11-14T02:18:00.234562Z",
+  "status": "open",
+  "actions": [
+    {
+      "timestamp": "2025-11-14T02:18:00.234665Z",
+      "action_type": "detected_subscription",
+      "data": {
+        "event_type": "maintenance_request",
+        "urgency": "routine",
+        "location": "connorquintenz@gmail.com",
+        "summary": "Fridge not getting cold, needs assistance.",
+        "is_maintenance": true
+      }
+    },
+    {
+      "timestamp": "2025-11-14T02:18:01.069634Z",
+      "action_type": "determined_repair_type",
+      "data": {
+        "repair_type": "appliance"
+      }
+    },
+    {
+      "timestamp": "2025-11-14T02:18:02.169390Z",
+      "action_type": "selected_maintenance_company",
+      "data": {
+        "company": {
+          "Company Name": "Northstar Facilities LLC",
+          "Services": "HVAC, Boiler Maintenance, Preventive Maintenance",
+          "Contact Person": "Alicia Reed",
+          "Phone": "555-0101",
+          "Email": "alicia.reed@northstar-fac.test",
+          "Address": "120 Harbor Way, Suite 200, Portland, ME"
+        }
+      }
+    }
+  ],
+  "emails": [
+    {
+      "timestamp": "2025-11-14T02:18:03.429581Z",
+      "recipient": "property_manager",
+      "content": "Subject: Maintenance Request Summary - Urgent Attention Needed\n\nDear [Property Manager's Name],\n\nI am writing to bring to your attention a maintenance request that requires urgent action. The details are as follows:\n\n- Event Type: Maintenance Request\n- Property/Unit: Unknown\n- Repair Type: Appliance\n- Urgency: Routine\n- Description: Fridge not getting cold, needs assistance.\n\nPlease advise on the next steps to address this issue promptly. Thank you for your attention to this matter.\n\nBest regards,\n\n[Your Name]\nProperty Management Assistant",
+      "sent": true
+    },
+    {
+      "timestamp": "2025-11-14T02:18:04.910780Z",
+      "recipient": "maintenance_company",
+      "content": "Subject: Request for Availability for Appliance Repair Consultation\n\nDear Maintenance Company,\n\nI am writing on behalf of [Property/Unit: Unknown] to request your assistance with a routine appliance repair. The issue pertains to a fridge that is not getting cold and requires immediate attention.\n\nCould you please provide the available times for your team to come inspect the problem and provide a consultation? We are looking to address this issue promptly to ensure the proper functioning of the appliance.\n\nYour prompt response with available times would be greatly appreciated. Thank you for your attention to this matter.\n\nWarm regards,\n\n[Your Name]\n[Your Title]\n[Your Contact Information]",
+      "sent": true
+    },
+    {
+      "timestamp": "2025-11-14T02:18:06.403115Z",
+      "recipient": "tenant",
+      "content": "Subject: Maintenance Visit Scheduled for Fridge Repair\n\nDear Tenant,\n\nI hope this message finds you well. \n\nWe wanted to inform you that a maintenance visit has been scheduled to address the issue with your fridge not getting cold. A maintenance company will be reaching out to you shortly to coordinate a time to visit your unit and assess the problem.\n\nPlease be on the lookout for their call or email so that the issue can be resolved promptly. If you have any questions or need further assistance, please do not hesitate to contact us.\n\nThank you for your cooperation and understanding.\n\nBest regards,\n\n[Your Name]\nProperty Management Assistant",
+      "sent": true
+    }
+  ]
+}

@@ -172,15 +172,16 @@ Intelligence{% endblock %} {% block extra_head %}
 
 <div class="case-header">
   <h1>
-    {{ case.event_id }}
+    {{ case.display_name if case.display_name else case.event_id }}
+    <span style="font-size: 0.7em; color: #999; margin-left: 10px;">({{ case.event_id }})</span>
     <span class="status-badge status-{{ case.get('status', 'open') }}">
       {{ case.get('status', 'open') }}
     </span>
   </h1>
   <div class="case-header-info">
     <span><strong>Event Type:</strong> {{ case.event_data.event_type }}</span>
-    <span><strong>Entity:</strong> {{ case.event_data.entity_id }}</span>
-    <span><strong>Source:</strong> {{ case.event_data.source }}</span>
+    <span><strong>Location:</strong> {{ case.event_data.location if case.event_data.location and case.event_data.location != 'unknown' else 'N/A' }}</span>
+    <span><strong>Urgency:</strong> {{ case.event_data.urgency if case.event_data.urgency else 'routine' }}</span>
     <span><strong>Created:</strong> {{ case.created_at }}</span>
   </div>
 </div>
@@ -188,14 +189,14 @@ Intelligence{% endblock %} {% block extra_head %}
 <div class="source-event-section">
   <h3>Source Event</h3>
   <div class="source-event-content">
-    <div><strong>Source:</strong> {{ case.event_data.source }}</div>
-    <div style="margin-top: 8px">
-      <strong>Description:</strong> {{ case.event_data.description }}
-    </div>
+    <div><strong>Source Type:</strong> {{ case.event_data.source_type if case.event_data.source_type else 'unknown' }}</div>
+    <div style="margin-top: 8px"><strong>Source ID:</strong> {{ case.event_data.source_id if case.event_data.source_id else 'N/A' }}</div>
+    <div style="margin-top: 8px"><strong>Location:</strong> {{ case.event_data.location if case.event_data.location and case.event_data.location != 'unknown' else 'N/A' }}</div>
+    <div style="margin-top: 8px"><strong>Summary:</strong> {{ case.event_data.summary if case.event_data.summary else (case.event_data.description if case.event_data.description else 'N/A') }}</div>
     <div style="margin-top: 8px">
       <strong>Type:</strong> {{ case.event_data.event_type }} |
-      <strong>Repair Type:</strong> {{ case.event_data.repair_type }} |
-      <strong>Urgency:</strong> {{ case.event_data.urgency }}
+      <strong>Repair Type:</strong> {{ case.event_data.repair_type if case.event_data.repair_type else 'N/A' }} |
+      <strong>Urgency:</strong> {{ case.event_data.urgency if case.event_data.urgency else 'routine' }}
     </div>
   </div>
 </div>

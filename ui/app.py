@@ -1,5 +1,5 @@
 """Flask web application for viewing cases and integrations."""
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import os
 import sys
 import json
@@ -9,11 +9,19 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
+# Ensure .env is loaded from project root
+from dotenv import load_dotenv
+load_dotenv(os.path.join(project_root, '.env'))
+
 from case_file import CaseFile
 import config
 
 # Fix case file directory path to be relative to project root, not ui/
 config.CASE_FILE_DIR = os.path.join(project_root, config.CASE_FILE_DIR)
+
+# Update sheet IDs to use the new ones
+config.GOOGLE_SHEETS_EVENTS_ID = os.getenv("GOOGLE_SHEETS_EVENTS_ID", "1MBKbE6ubsKcrrmP1EqdCK5mu0mAPba-Wm1cV1AnJsO0")
+config.GOOGLE_SHEETS_MAINTENANCE_ID = os.getenv("GOOGLE_SHEETS_MAINTENANCE_ID", "13HD2FI-Cl3xNzlTC6pHYCyxY_cA7QwC4Sv548C58AHM")
 
 # Try to import Google Sheets client for events (optional)
 try:
@@ -21,6 +29,14 @@ try:
     sheets_client_available = True
 except Exception:
     sheets_client_available = False
+
+# Try to import scan_once function
+try:
+    from scan_once import scan_once
+    scan_available = True
+except Exception as e:
+    print(f"Warning: Could not import scan_once: {e}")
+    scan_available = False
 
 app = Flask(__name__)
 
@@ -39,10 +55,16 @@ def get_all_cases():
                 case_file = CaseFile.load(event_id)
                 if case_file:
                     case_data = case_file.to_dict()
+                    # Add display name based on event type (new format, max 4 words)
+                    event_type = case_file.event_data.get('event_type', '')
+                    summary = case_file.event_data.get('summary', case_file.event_data.get('description', ''))
+                    location = case_file.event_data.get('location', 'unknown')
+                    case_data['display_name'] = extract_readable_name(event_type, summary, location, max_words=4)
                     # Add summary info for list view
                     case_data['summary'] = {
                         'event_type': case_file.event_data.get('event_type', 'unknown'),
-                        'entity_id': case_file.event_data.get('entity_id', 'unknown'),
+                        'location': case_file.event_data.get('location', 'unknown'),
+                        'urgency': case_file.event_data.get('urgency', 'routine'),
                         'created_at': case_file.created_at,
                         'actions_count': len(case_file.actions),
                         'emails_count': len(case_file.emails)
@@ -79,6 +101,51 @@ def get_cases_for_agent(agent_id):
     
     return []
 
+def extract_readable_name(event_type: str = "", summary: str = "", location: str = "", max_words: int = 4) -> str:
+    """Extract a readable name from event metadata (max 4 words).
+    
+    Uses new event format: event_type, summary, location.
+    
+    Args:
+        event_type: The event type (e.g., "maintenance_request")
+        summary: Optional summary from metadata
+        location: Optional location from metadata
+        max_words: Maximum number of words (default 4)
+        
+    Returns:
+        A readable name string (max 4 words)
+    """
+    words = []
+    
+    # Start with event type (formatted)
+    if event_type:
+        type_words = event_type.replace('_', ' ').title().split()
+        words.extend(type_words[:2])  # Max 2 words from event type
+    
+    # Add location if available and we have space
+    if location and location.lower() != 'unknown' and len(words) < max_words:
+        # Clean location: if it's an email, extract just the name part
+        clean_location = location
+        if '@' in location:
+            # Extract name from email (e.g., "connorquintenz@gmail.com" -> "connorquintenz")
+            clean_location = location.split('@')[0]
+        
+        location_words = clean_location.split()[:2]  # Max 2 words from location
+        remaining = max_words - len(words)
+        words.extend(location_words[:remaining])
+    
+    # If still have space, add first word from summary
+    if summary and len(words) < max_words:
+        summary_words = summary.split()[:max_words - len(words)]
+        words.extend(summary_words)
+    
+    # Fallback if no words
+    if not words:
+        return "Untitled Event"
+    
+    # Return max 4 words
+    return ' '.join(words[:max_words])
+
 def get_all_events():
     """Get all events from Google Sheets or case files."""
     events = []
@@ -94,31 +161,60 @@ def get_all_events():
                 if 'event_id' not in event_row or not event_row.get('event_id'):
                     continue
                 
+                # Use new event format only
+                event_type = event_row.get('event_type', '')
+                summary = event_row.get('summary', '')
+                location = event_row.get('location', 'unknown')
+                urgency = event_row.get('urgency', 'routine')
+                source_type = event_row.get('source_type', 'unknown')
+                source_id = event_row.get('source_id', '')
+                status = event_row.get('status', 'new')
+                
+                # Build display name (max 4 words)
+                display_name = extract_readable_name(event_type, summary, location, max_words=4)
+                
                 event = {
                     'event_id': event_row.get('event_id', ''),
-                    'event_type': event_row.get('event_type', ''),
-                    'source': event_row.get('source', 'unknown'),
+                    'event_type': event_type if event_type else 'Pending Analysis',
+                    'source_type': source_type,
+                    'source_id': source_id,
                     'timestamp': event_row.get('timestamp', ''),
-                    'details': event_row.get('details', ''),
-                    'subscribed_agents': event_row.get('subscribed_agents', '')
+                    'summary': summary,
+                    'location': location,
+                    'urgency': urgency,
+                    'status': status,
+                    'subscribed_agents': event_row.get('subscribed_agents', ''),
+                    'display_name': display_name
                 }
                 events.append(event)
         except Exception as e:
             print(f"Error reading events from Google Sheets: {e}")
             # Fallback to case files
     
-    # Fallback: get events from case files
+    # Fallback: get events from case files (using new format)
     if not events:
         all_cases = get_all_cases()
         for case in all_cases:
             event_data = case.get('event_data', {})
+            event_type = event_data.get('event_type', '')
+            summary = event_data.get('summary', event_data.get('description', ''))
+            location = event_data.get('location', 'unknown')
+            urgency = event_data.get('urgency', 'routine')
+            source_type = event_data.get('source_type', 'unknown')
+            source_id = event_data.get('source_id', '')
+            
             event = {
                 'event_id': case.get('event_id', ''),
-                'event_type': event_data.get('event_type', ''),
-                'source': event_data.get('source', 'unknown'),
+                'event_type': event_type if event_type else 'Pending Analysis',
+                'source_type': source_type,
+                'source_id': source_id,
                 'timestamp': event_data.get('timestamp', case.get('created_at', '')),
-                'details': event_data.get('details', event_data.get('description', '')),
-                'subscribed_agents': ''
+                'summary': summary,
+                'location': location,
+                'urgency': urgency,
+                'status': case.get('status', 'new'),
+                'subscribed_agents': config.PROPERTY_MANAGEMENT_AGENT_ID,
+                'display_name': extract_readable_name(event_type, summary, location, max_words=4)
             }
             events.append(event)
     
@@ -130,6 +226,14 @@ def get_event_by_id(event_id):
     """Get a specific event by ID."""
     events = get_all_events()
     event = next((e for e in events if e['event_id'] == event_id), None)
+    if event and 'display_name' not in event:
+        # Ensure display_name is set using new format
+        event['display_name'] = extract_readable_name(
+            event.get('event_type', ''),
+            event.get('summary', ''),
+            event.get('location', ''),
+            max_words=4
+        )
     return event
 
 @app.route('/')
@@ -170,6 +274,13 @@ def case_detail(event_id):
     agent = agents_list[0] if agents_list else None
     
     case_dict = case_file.to_dict()
+    
+    # Add display name based on event type (new format, max 4 words)
+    event_type = case_file.event_data.get('event_type', '')
+    summary = case_file.event_data.get('summary', case_file.event_data.get('description', ''))
+    location = case_file.event_data.get('location', 'unknown')
+    case_dict['display_name'] = extract_readable_name(event_type, summary, location, max_words=4)
+    
     # Ensure status exists, default to 'open'
     if 'status' not in case_dict:
         case_dict['status'] = 'open'
@@ -217,12 +328,22 @@ def integrations():
     drive_configured = bool(config.GOOGLE_DRIVE_FOLDER_ID)
     drive_folder_id = config.GOOGLE_DRIVE_FOLDER_ID or "Not configured"
     
+    # Check if Gmail is configured
+    gmail_configured = config.GMAIL_ENABLED
+    gmail_email = config.GMAIL_EMAIL_ADDRESS or "Not specified"
+    
     integration_status = {
         'google_drive': {
             'name': 'Google Drive',
             'configured': drive_configured,
             'folder_id': drive_folder_id,
             'status': 'Connected' if drive_configured else 'Not configured'
+        },
+        'gmail': {
+            'name': 'Gmail',
+            'configured': gmail_configured,
+            'email_address': gmail_email,
+            'status': 'Connected' if gmail_configured else 'Not configured'
         }
     }
     
@@ -241,6 +362,68 @@ def api_case_detail(event_id):
         return jsonify({'error': 'Case not found'}), 404
     return jsonify(case_file.to_dict())
 
+@app.route('/api/scan', methods=['POST'])
+def trigger_scan():
+    """API endpoint to trigger a manual scan."""
+    if not scan_available:
+        return jsonify({
+            'success': False,
+            'error': 'Scan functionality not available. Check server logs.'
+        }), 500
+    
+    try:
+        # Run scan with timeout protection
+        import signal
+        
+        result = scan_once()
+        
+        # Ensure result has proper structure
+        if not isinstance(result, dict):
+            return jsonify({
+                'success': False,
+                'error': 'Invalid scan result format'
+            }), 500
+        
+        # Result should already have errors filtered by scan_once, but double-check
+        # Filter out non-critical errors (like email marking errors, API not enabled)
+        if result.get('errors'):
+            critical_errors = []
+            for e in result['errors']:
+                error_str = str(e).lower()
+                if 'insufficient authentication scopes' in error_str:
+                    continue
+                if 'mark email as read' in error_str:
+                    continue
+                if 'api has not been used' in error_str:
+                    continue
+                if 'accessnotconfigured' in error_str:
+                    continue
+                critical_errors.append(e)
+            
+            if not critical_errors:
+                result['success'] = True
+                result['errors'] = []
+            else:
+                result['errors'] = critical_errors
+        
+        # Log success for debugging
+        print(f"Scan completed: success={result.get('success')}, events={result.get('events_created', 0)}, cases={result.get('cases_created', 0)}")
+        
+        return jsonify(result)
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Scan error: {error_details}")
+        # Return a more user-friendly error message
+        error_msg = str(e)
+        if len(error_msg) > 200:
+            error_msg = error_msg[:200] + "..."
+        return jsonify({
+            'success': False,
+            'error': error_msg,
+            'errors': [error_msg]
+        }), 500
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=True, host='127.0.0.1', port=5001)
 

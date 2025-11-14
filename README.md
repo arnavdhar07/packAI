@@ -5,9 +5,10 @@ This MVP demonstrates a base system for creating a unified knowledge network tha
 ## Features
 
 - **Google Drive Integration**: Monitors a Google Drive folder for new files
+- **Gmail Integration**: Monitors Gmail account for incoming emails and creates events
 - **GPT-Powered Event Creation**: Automatically creates structured events from unstructured data
 - **Event Storage**: Stores events in Google Spreadsheets
-- **Property Management Agent**: Processes maintenance requests, selects maintenance companies, and generates emails
+- **Property Management Agent**: Processes maintenance requests, analyzes events, selects maintenance companies, and generates emails
 - **Case File System**: Tracks all agent actions and generated emails
 
 ## Setup
@@ -25,6 +26,7 @@ pip install -r requirements.txt
 3. Enable the following APIs:
    - Google Drive API
    - Google Sheets API
+   - Gmail API (if using Gmail integration)
 4. Create a Service Account:
    - Go to "IAM & Admin" > "Service Accounts"
    - Click "Create Service Account"
@@ -67,6 +69,20 @@ pip install -r requirements.txt
 2. The URL will look like: `https://drive.google.com/drive/folders/FOLDER_ID_HERE`
 3. Copy the `FOLDER_ID_HERE` part
 
+### 4. Gmail Setup (Optional)
+
+If you want to monitor Gmail for incoming emails:
+
+1. In Google Cloud Console, enable Gmail API
+2. Create OAuth 2.0 credentials:
+   - Go to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "OAuth client ID"
+   - Choose "Desktop app" as application type
+   - Download the credentials JSON file
+   - Save it as `gmail_credentials.json` in the project root
+3. On first run, the application will open a browser for you to authorize Gmail access
+4. The token will be saved for future use
+
 ### 5. Configure Environment Variables
 
 1. Create a `.env` file in the project root:
@@ -80,8 +96,12 @@ pip install -r requirements.txt
    ```env
    # Google API Configuration
    GOOGLE_DRIVE_FOLDER_ID=your_drive_folder_id_here
-   GOOGLE_SHEETS_EVENTS_ID=1N-qww4KnhRZNmg0hIFbvT15ahV2TIc9GWuZ4WS82qkk
-   GOOGLE_SHEETS_MAINTENANCE_ID=1DB9AsEXePFCgTm0swVXDb6RwMN1POtuuy3Tm6RH5OMQ
+   GOOGLE_SHEETS_EVENTS_ID=1MBKbE6ubsKcrrmP1EqdCK5mu0mAPba-Wm1cV1AnJsO0
+   GOOGLE_SHEETS_MAINTENANCE_ID=13HD2FI-Cl3xNzlTC6pHYCyxY_cA7QwC4Sv548C58AHM
+
+   # Gmail Configuration (Optional)
+   GMAIL_ENABLED=true
+   GMAIL_EMAIL_ADDRESS=your-email@gmail.com
 
    # OpenAI Configuration
    OPENAI_API_KEY=your_openai_api_key_here
@@ -91,6 +111,8 @@ pip install -r requirements.txt
 
 3. Fill in the values:
    - `GOOGLE_DRIVE_FOLDER_ID`: Your Google Drive folder ID (from step 4)
+   - `GMAIL_ENABLED`: Set to `true` to enable Gmail monitoring
+   - `GMAIL_EMAIL_ADDRESS`: The Gmail address to monitor
    - `OPENAI_API_KEY`: Your OpenAI API key (get from https://platform.openai.com/api-keys)
    - `OPENAI_MODEL`: Model to use (default: `gpt-3.5-turbo` for cost efficiency)
 
@@ -139,14 +161,16 @@ See `ui/README.md` for more details.
 
 The application will:
 
-1. Monitor the Google Drive folder for new files
-2. When a new file is detected, extract its content
-3. Use GPT to create a structured event from the content
+1. Monitor Google Drive folder and/or Gmail account for new data
+2. When new data is detected (file or email), extract its content
+3. Create a basic event (event_id, source, timestamp, subscribed_agents) - event_type and details are empty
 4. Save the event to the events spreadsheet
-5. If the event is subscribed to the property management agent, process it:
-   - Determine repair type
-   - Select appropriate maintenance company
-   - Generate emails (to property manager, maintenance company, and tenant)
+5. Property management agent processes the event:
+   - Analyzes content to determine event_type and details
+   - Updates event in spreadsheet with event_type and details
+   - Determines repair type (if maintenance issue)
+   - Selects appropriate maintenance company
+   - Generates emails (to property manager, maintenance company, and tenant)
 6. Save all actions to a case file
 
 ### Case Files

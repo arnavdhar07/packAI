@@ -78,9 +78,9 @@
     <div class="event-item" onclick="window.location.href='/events/{{ event.event_id }}'">
       <div class="event-item-info">
         <span class="event-label">Recent</span>
-        <div class="event-id">{{ event.event_id }}</div>
+        <div class="event-id" title="{{ event.event_id }}">{{ event.display_name if event.display_name else event.event_id }}</div>
         <div class="event-type">{{ event.event_type if event.event_type else 'Pending Analysis' }}</div>
-        <div class="event-source">{{ event.source }}</div>
+        <div class="event-source">{{ event.location if event.location and event.location != 'unknown' else (event.source_type if event.source_type else 'N/A') }}</div>
       </div>
       <div class="event-meta">
         <div>{{ event.timestamp[:10] }}</div>

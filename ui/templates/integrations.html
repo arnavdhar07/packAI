@@ -58,11 +58,19 @@ MVP{% endblock %} {% block extra_head %}
       </div>
     </div>
     <div class="integration-details">
+      {% if integration.folder_id %}
       <div><strong>Folder ID:</strong> {{ integration.folder_id }}</div>
+      {% endif %}
+      {% if integration.email_address %}
+      <div><strong>Email Address:</strong> {{ integration.email_address }}</div>
+      {% endif %}
       {% if not integration.configured %}
       <div style="margin-top: 10px; color: #ff9800">
-        Configure this integration by setting GOOGLE_DRIVE_FOLDER_ID in your
-        .env file.
+        {% if integration.name == 'Google Drive' %}
+        Configure this integration by setting GOOGLE_DRIVE_FOLDER_ID in your .env file.
+        {% elif integration.name == 'Gmail' %}
+        Configure this integration by setting GMAIL_ENABLED=true and GMAIL_EMAIL_ADDRESS in your .env file.
+        {% endif %}
       </div>
       {% endif %}
     </div>
