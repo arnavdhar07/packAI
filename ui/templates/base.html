@@ -49,18 +49,150 @@
             padding: 20px;
             border-radius: 4px;
         }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .scan-button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .scan-button:hover {
+            background: #357ae8;
+        }
+        .scan-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .scan-status {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .scan-status.success {
+            color: #4caf50;
+        }
+        .scan-status.error {
+            color: #f44336;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
     <div class="header">
-        <div class="company-header">Pack Intelligence</div>
+        <div class="header-top">
+            <div class="company-header">Pack Intelligence</div>
+            <div>
+                <button id="scanButton" class="scan-button" onclick="triggerScan()">Scan Now</button>
+                <div id="scanStatus" class="scan-status"></div>
+            </div>
+        </div>
         <div class="nav">
             <a href="/agents" {% if request.path.startswith('/agents') %}class="active"{% endif %}>Agents</a>
             <a href="/events" {% if request.path.startswith('/events') %}class="active"{% endif %}>Events</a>
             <a href="/integrations" {% if request.path == '/integrations' %}class="active"{% endif %}>Integrations</a>
         </div>
     </div>
+    <script>
+        let scanInProgress = false;
+        
+        function triggerScan() {
+            // Debounce: prevent multiple simultaneous scans
+            if (scanInProgress) {
+                console.log('Scan already in progress, ignoring click');
+                return;
+            }
+            
+            const button = document.getElementById('scanButton');
+            const status = document.getElementById('scanStatus');
+            
+            // Set flag and disable button
+            scanInProgress = true;
+            button.disabled = true;
+            button.textContent = 'Scanning...';
+            status.textContent = 'Scanning for new emails and files...';
+            status.className = 'scan-status';
+            
+            // Make API call
+            fetch('/api/scan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
+            .then(data => {
+                scanInProgress = false;
+                button.disabled = false;
+                button.textContent = 'Scan Now';
+                
+                if (data.success) {
+                    // Show "Scan complete" message first
+                    status.className = 'scan-status success';
+                    status.textContent = 'Scan complete';
+                    
+                    // After 2 seconds, show detailed results
+                    setTimeout(() => {
+                        let message = `Scan complete: `;
+                        const parts = [];
+                        if (data.emails_processed > 0) parts.push(`${data.emails_processed} email(s)`);
+                        if (data.files_processed > 0) parts.push(`${data.files_processed} file(s)`);
+                        if (data.events_created > 0) parts.push(`${data.events_created} event(s) created`);
+                        if (data.cases_created > 0) parts.push(`${data.cases_created} case(s) created`);
+                        
+                        if (parts.length > 0) {
+                            message += parts.join(', ');
+                        } else {
+                            message += 'No new items found';
+                        }
+                        status.textContent = message;
+                        
+                        // Reload page after showing results for 1 more second
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    }, 2000);
+                } else {
+                    status.className = 'scan-status error';
+                    // Show more detailed error message
+                    let errorMsg = 'Unknown error';
+                    if (data.error) {
+                        errorMsg = data.error;
+                    } else if (data.errors && data.errors.length > 0) {
+                        // Show first error, but truncate if too long
+                        errorMsg = data.errors[0];
+                        if (errorMsg.length > 100) {
+                            errorMsg = errorMsg.substring(0, 100) + '...';
+                        }
+                    }
+                    status.textContent = `Scan failed: ${errorMsg}`;
+                }
+            })
+            .catch(error => {
+                scanInProgress = false;
+                button.disabled = false;
+                button.textContent = 'Scan Now';
+                status.className = 'scan-status error';
+                const errorMsg = error.error || error.message || 'Network error';
+                status.textContent = `Scan failed: ${errorMsg}`;
+                console.error('Scan error:', error);
+            });
+        }
+    </script>
     <div class="content">
         {% block content %}{% endblock %}
     </div>

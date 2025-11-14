@@ -119,7 +119,7 @@ Intelligence{% endblock %} {% block extra_head %}
       >
         {{ case.get('status', 'open') }}
       </span>
-      <div class="case-id">{{ case.event_id }}</div>
+      <div class="case-id" title="{{ case.event_id }}">{{ case.display_name if case.display_name else case.event_id }}</div>
       <div class="case-type">{{ case.summary.event_type }}</div>
       <div class="case-entity">{{ case.summary.entity_id }}</div>
       <div class="case-stats">

@@ -7,9 +7,13 @@ load_dotenv()
 # Google Drive Configuration
 GOOGLE_DRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID", "")
 
+# Gmail Configuration
+GMAIL_EMAIL_ADDRESS = os.getenv("GMAIL_EMAIL_ADDRESS", "")
+GMAIL_ENABLED = os.getenv("GMAIL_ENABLED", "false").lower() == "true"
+
 # Google Sheets Configuration
-GOOGLE_SHEETS_EVENTS_ID = os.getenv("GOOGLE_SHEETS_EVENTS_ID", "1N-qww4KnhRZNmg0hIFbvT15ahV2TIc9GWuZ4WS82qkk")
-GOOGLE_SHEETS_MAINTENANCE_ID = os.getenv("GOOGLE_SHEETS_MAINTENANCE_ID", "1DB9AsEXePFCgTm0swVXDb6RwMN1POtuuy3Tm6RH5OMQ")
+GOOGLE_SHEETS_EVENTS_ID = os.getenv("GOOGLE_SHEETS_EVENTS_ID", "1MBKbE6ubsKcrrmP1EqdCK5mu0mAPba-Wm1cV1AnJsO0")
+GOOGLE_SHEETS_MAINTENANCE_ID = os.getenv("GOOGLE_SHEETS_MAINTENANCE_ID", "13HD2FI-Cl3xNzlTC6pHYCyxY_cA7QwC4Sv548C58AHM")
 
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

@@ -5,6 +5,7 @@ from google_sheets_client import GoogleSheetsClient
 from case_file import CaseFile
 import config
 import json
+import re
 
 class PropertyManagementAgent:
     """Agent that processes maintenance events and coordinates responses."""
@@ -34,58 +35,66 @@ class PropertyManagementAgent:
             print(f"Error reading maintenance companies: {e}")
             return []
     
-    def analyze_event_content(self, content: str) -> Dict:
-        """Analyze source content to determine event_type and details.
+    def is_maintenance_related(self, event_type: str) -> bool:
+        """Check if an event type is maintenance-related.
         
         Args:
-            content: The source content to analyze
+            event_type: The event type to check
             
         Returns:
-            Dictionary with event_type and details
+            True if the event is maintenance-related, False otherwise
         """
-        prompt = f"""Analyze the following property management document and determine:
-1. Event type (e.g., "maintenance_request", "repair_request", "emergency_repair", "routine_maintenance", "inquiry", "complaint")
-2. A concise summary/details of the event (2-3 sentences)
+        maintenance_types = [
+            'maintenance_request',
+            'repair_request',
+            'emergency_repair',
+            'routine_maintenance',
+            'maintenance_issue',
+            'repair_needed',
+            'maintenance',
+            'repair'
+        ]
+        return event_type.lower() in [mt.lower() for mt in maintenance_types]
+    
+    # Note: analyze_event_content method removed - event creator now handles analysis
+    # This agent only processes events that have already been analyzed
+    
+    def determine_repair_type_from_summary(self, summary: str, location: str) -> str:
+        """Determine repair type from metadata summary (fast path).
+        
+        Args:
+            summary: One-sentence summary from metadata
+            location: Location information
+            
+        Returns:
+            Repair type string
+        """
+        prompt = f"""Based on this maintenance request summary, determine the repair type.
 
-Content:
-{content}
+Summary: {summary}
+Location: {location}
 
-Return your response as a JSON object with these keys: event_type, details.
-The details should be a brief summary of what the event is about."""
+Return ONLY the repair type (e.g., "plumbing", "hvac", "electrical", "appliance", "general").
+Be concise - one word."""
 
         try:
             response = self.client.chat.completions.create(
                 model=config.OPENAI_MODEL,
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that analyzes property management documents. Always respond with valid JSON."},
+                    {"role": "system", "content": "You are a property management assistant. Return only the repair type, one word."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.3
+                temperature=0.2
             )
             
-            response_text = response.choices[0].message.content.strip()
-            
-            # Try to parse JSON from response
-            if "```json" in response_text:
-                response_text = response_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in response_text:
-                response_text = response_text.split("```")[1].split("```")[0].strip()
-            
-            analysis = json.loads(response_text)
-            
-            # Ensure fields exist
-            analysis.setdefault('event_type', 'maintenance_request')
-            analysis.setdefault('details', content[:500])  # Fallback to truncated content
-            
-            return analysis
+            repair_type = response.choices[0].message.content.strip().lower()
+            # Clean up response
+            repair_type = repair_type.replace('"', '').replace('.', '').strip()
+            return repair_type
             
         except Exception as e:
-            print(f"Error analyzing event content: {e}")
-            # Return default values if analysis fails
-            return {
-                'event_type': 'maintenance_request',
-                'details': content[:500]
-            }
+            print(f"Error determining repair type: {e}")
+            return "general"
     
     def determine_repair_type(self, event_data: Dict) -> str:
         """Determine the repair type from event data.
@@ -287,55 +296,149 @@ Inform them that a maintenance company will be contacting them shortly to schedu
             print(f"Error generating email: {e}")
             return f"Error generating email: {e}"
     
-    def process_event(self, event_id: str, content: str, source: str) -> CaseFile:
-        """Process an event and create case file with all actions.
+    def check_and_process_subscribed_events(self) -> List[CaseFile]:
+        """Check for events this agent is subscribed to and process them.
         
-        First, the agent analyzes the content to determine event_type and details,
-        then updates the event in Google Sheets, then processes it.
+        Fast path: Uses metadata from spreadsheet for quick decisions (no API calls).
+        Only processes maintenance-related events with status='new'.
+        
+        Returns:
+            List of CaseFile objects created
+        """
+        case_files = []
+        
+        try:
+            # Get all events from spreadsheet
+            events = self.sheets_client.read_as_dicts(config.GOOGLE_SHEETS_EVENTS_ID)
+            
+            for event_row in events:
+                event_id = event_row.get('event_id', '')
+                if not event_id:
+                    continue
+                
+                # Check if already processed (case file exists)
+                existing_case = CaseFile.load(event_id)
+                if existing_case:
+                    continue  # Already processed
+                
+                # Check status - only process 'new' events
+                status = event_row.get('status', 'new')
+                if status != 'new':
+                    continue
+                
+                # Check if this agent is subscribed
+                subscribed_agents = event_row.get('subscribed_agents', '')
+                if self.agent_id not in subscribed_agents:
+                    continue  # Not subscribed to this event
+                
+                # Fast path: Read metadata directly from spreadsheet (no API calls)
+                event_type = event_row.get('event_type', '')
+                urgency = event_row.get('urgency', 'routine')
+                location = event_row.get('location', 'unknown')
+                summary = event_row.get('summary', '')
+                source_type = event_row.get('source_type', 'unknown')
+                source_id = event_row.get('source_id', '')
+                
+                # Check if this is a maintenance-related event
+                if not self.is_maintenance_related(event_type):
+                    print(f"Event {event_id} is not maintenance-related (type: {event_type}). Skipping.")
+                    continue
+                
+                # Process the event using metadata (fast path)
+                print(f"Processing subscribed event: {event_id} (type: {event_type}, urgency: {urgency}, location: {location})")
+                case_file = self.process_event_fast(event_id, event_type, urgency, location, summary, source_type, source_id)
+                
+                if case_file:
+                    case_files.append(case_file)
+                    # Update event status to 'processing' or 'processed'
+                    self._update_event_status(event_id, 'processing')
+                    print(f"Created case for event {event_id}")
+        
+        except Exception as e:
+            print(f"Error checking subscribed events: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        return case_files
+    
+    def _update_event_status(self, event_id: str, status: str):
+        """Update event status in spreadsheet.
         
         Args:
             event_id: The event ID
-            content: The source content to analyze
-            source: The source identifier
+            status: New status ('new', 'processing', 'processed', 'closed')
+        """
+        try:
+            # Find the row and update status column (last column, column 10)
+            sheet = self.sheets_client.get_sheet(config.GOOGLE_SHEETS_EVENTS_ID)
+            all_values = sheet.get_all_values()
+            
+            for i, row in enumerate(all_values, start=1):
+                if row and len(row) > 0 and row[0] == event_id:
+                    # Status is in column 10 (index 9, 1-indexed)
+                    # Columns: event_id, timestamp, event_type, source_type, source_id, urgency, location, summary, subscribed_agents, status
+                    try:
+                        sheet.update_cell(i, 10, status)
+                        return
+                    except Exception as e:
+                        # If column doesn't exist yet, try to append it or skip
+                        print(f"Warning: Could not update status column: {e}")
+                        return
+        except Exception as e:
+            print(f"Warning: Could not update event status: {e}")
+    
+    def process_event_fast(self, event_id: str, event_type: str, urgency: str, location: str, summary: str, source_type: str, source_id: str) -> Optional[CaseFile]:
+        """Process an event using lightweight metadata (fast path - no API calls).
+        
+        Uses metadata from spreadsheet for quick decisions. Only fetches full source
+        if needed for complex cases.
+        
+        Args:
+            event_id: The event ID
+            event_type: The event type
+            urgency: Urgency level (urgent/routine)
+            location: Location (unit number, etc.)
+            summary: One-sentence summary
+            source_type: Type of source (gmail, google_drive, etc.)
+            source_id: Source identifier
             
         Returns:
-            CaseFile object with all actions recorded
+            CaseFile object with all actions recorded, or None if not maintenance-related
         """
-        # Step 0: Analyze content to determine event_type and details
-        print(f"Analyzing content for event {event_id}...")
-        analysis = self.analyze_event_content(content)
-        event_type = analysis.get('event_type', 'maintenance_request')
-        details = analysis.get('details', content[:500])
+        # Fast decision: Check urgency for immediate alerts
+        if urgency == 'urgent':
+            print(f"URGENT event detected: {event_id} at {location}")
+            # Could send immediate alert here
         
-        # Update the event in Google Sheets with event_type and details
-        try:
-            self.sheets_client.update_event(
-                config.GOOGLE_SHEETS_EVENTS_ID,
-                event_id,
-                event_type,
-                details
-            )
-            print(f"Updated event {event_id} with event_type: {event_type}")
-        except Exception as e:
-            print(f"Error updating event in spreadsheet: {e}")
-        
-        # Create event_data dict for case file (includes all info for processing)
+        # Create event_data dict for case file
         event_data = {
             'event_id': event_id,
             'event_type': event_type,
-            'source': source,
-            'details': details,
-            'description': content,  # Keep full content for agent processing
+            'urgency': urgency,
+            'location': location,
+            'summary': summary,
+            'source_type': source_type,
+            'source_id': source_id,
+            'description': summary,  # Use summary as description
         }
         
         case_file = CaseFile(event_id, event_data)
-        case_file.add_action("analyzed_event", {
+        case_file.add_action("detected_subscription", {
             "event_type": event_type,
-            "details": details
+            "urgency": urgency,
+            "location": location,
+            "summary": summary,
+            "is_maintenance": True
         })
         
-        # Step 1: Determine repair type
-        repair_type = self.determine_repair_type(event_data)
+        # Step 1: Determine repair type (fast path - use summary from metadata)
+        if summary and len(summary) > 20:
+            # Use metadata summary for repair type determination (fast path)
+            repair_type = self.determine_repair_type_from_summary(summary, location)
+        else:
+            # Fallback: Use full event_data
+            repair_type = self.determine_repair_type(event_data)
+        
         event_data['repair_type'] = repair_type
         case_file.add_action("determined_repair_type", {"repair_type": repair_type})
         
@@ -367,6 +470,5 @@ Inform them that a maintenance company will be contacting them shortly to schedu
         case_file.save()
         
         print(f"Processed event {event_id} - Case file created")
-        
         return case_file
 

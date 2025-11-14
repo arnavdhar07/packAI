@@ -9,13 +9,24 @@ venv/
 ENV/
 .venv
 
-# Environment variables
+# Environment variables and API keys
 .env
 *.env
+.env.local
+.env.*.local
+*api*key*
+*API*KEY*
+*secret*
+*SECRET*
+*password*
+*PASSWORD*
 
 # Credentials
 credentials.json
 **/credentials.json
+gmail_credentials.json
+token.pickle
+*.pickle
 
 # macOS
 .DS_Store
@@ -33,3 +44,4 @@ credentials.json
 # But exclude any credentials files
 !case_files/*.json
 
+gmail_token.json
