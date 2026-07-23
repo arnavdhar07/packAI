@@ -4,7 +4,7 @@
     "event_id": "evt_807bf1917be3",
     "event_type": "maintenance_request",
     "urgency": "routine",
-    "location": "connorquintenz@gmail.com",
+    "location": "tenant@example.com",
     "summary": "Fridge not getting cold, needs assistance.",
     "source_type": "gmail",
     "source_id": "19a802798634705c",
@@ -20,7 +20,7 @@
       "data": {
         "event_type": "maintenance_request",
         "urgency": "routine",
-        "location": "connorquintenz@gmail.com",
+        "location": "tenant@example.com",
         "summary": "Fridge not getting cold, needs assistance.",
         "is_maintenance": true
       }
