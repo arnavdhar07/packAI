@@ -45,3 +45,8 @@ token.pickle
 !case_files/*.json
 
 gmail_token.json
+
+# Extra ignores
+**/.DS_Store
+**/__pycache__/
+*.pyc
