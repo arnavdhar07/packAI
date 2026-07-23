@@ -1,4 +1,8 @@
-# Property Management MVP - Unified Knowledge Network
+# packAI
+
+*A unified knowledge network for AI agents: a property-management MVP.*
+
+Built by **Arnav Dhar** ([@arnavdhar07](https://github.com/arnavdhar07)) and **plantglass** ([@plantglass](https://github.com/plantglass)) as an equal (50/50) collaboration.
 
 This MVP demonstrates a base system for creating a unified knowledge network that AI agents can operate on. It processes unstructured data from Google Drive, creates events, and uses a property management agent to handle maintenance requests.
 
